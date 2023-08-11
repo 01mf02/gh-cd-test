@@ -75,7 +75,7 @@ jobs:
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
 
         mkdir -p "${PKG_BASENAME}"
-        cp "$BIN_PATH" "README.md" "LICENSE*" "$PKG_BASENAME"
+        cp "$BIN_PATH" README.md LICENSE* "$PKG_BASENAME"
 
         # base compressed package
         case ${{ matrix.job.target }} in
