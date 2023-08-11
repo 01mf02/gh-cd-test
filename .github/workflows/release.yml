@@ -77,10 +77,9 @@ jobs:
         mkdir -p "${PKG_BASENAME}"
         cp "$BIN_PATH" README.md LICENSE* "$PKG_BASENAME"
 
-        # base compressed package
         case ${{ matrix.job.target }} in
-          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
-          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
+          *-pc-windows-*) echo 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
+          *) echo tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
         esac;
 
     - name: Artifact upload
