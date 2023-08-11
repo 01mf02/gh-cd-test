@@ -23,10 +23,10 @@ jobs:
           #- { target: i686-pc-windows-msvc        , os: windows-2019                  }
           #- { target: i686-unknown-linux-gnu      , os: ubuntu-20.04, use-cross: true }
           #- { target: i686-unknown-linux-musl     , os: ubuntu-20.04, use-cross: true }
-          #- { target: x86_64-apple-darwin         , os: macos-12                      }
+          - { target: x86_64-apple-darwin         , os: macos-12                      }
           #- { target: x86_64-pc-windows-gnu       , os: windows-2019                  }
-          #- { target: x86_64-pc-windows-msvc      , os: windows-2019                  }
-          #- { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, use-cross: true }
+          - { target: x86_64-pc-windows-msvc      , os: windows-2019                  }
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, use-cross: true }
           - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04, use-cross: true }
     env:
       BUILD_CMD: cargo
@@ -78,8 +78,8 @@ jobs:
         cp "$BIN_PATH" README.md LICENSE* "$PKG_BASENAME"
 
         case ${{ matrix.job.target }} in
-          *-pc-windows-*) echo 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
-          *) echo tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
+          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
+          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
         esac;
 
     - name: Artifact upload
