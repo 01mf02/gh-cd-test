@@ -67,10 +67,10 @@ jobs:
         PKG_suffix=".tar.gz" ; case ${{ matrix.job.target }} in *-pc-windows-*) PKG_suffix=".zip" ;; esac;
 
         # Setup paths
-        BIN_NAME="${{ needs.crate_metadata.outputs.name }}${EXE_suffix}"
+        BIN_NAME="${REPO_NAME}${EXE_suffix}"
         BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
 
-        PKG_BASENAME=$REPO_NAME-$GITHUB_REF_NAME-${{ matrix.job.target }}
+        PKG_BASENAME=${REPO_NAME}-${GITHUB_REF_NAME}-${{ matrix.job.target }}
         PKG_NAME=${PKG_BASENAME}${PKG_suffix}
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
 
