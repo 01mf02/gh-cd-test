@@ -1,0 +1,90 @@
+name: Release
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  REPO_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  build:
+    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          #- { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04, use-cross: true }
+          #- { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04, use-cross: true }
+          #- { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04, use-cross: true }
+          #- { target: i686-pc-windows-msvc        , os: windows-2019                  }
+          #- { target: i686-unknown-linux-gnu      , os: ubuntu-20.04, use-cross: true }
+          #- { target: i686-unknown-linux-musl     , os: ubuntu-20.04, use-cross: true }
+          #- { target: x86_64-apple-darwin         , os: macos-12                      }
+          #- { target: x86_64-pc-windows-gnu       , os: windows-2019                  }
+          #- { target: x86_64-pc-windows-msvc      , os: windows-2019                  }
+          #- { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, use-cross: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04, use-cross: true }
+    env:
+      BUILD_CMD: cargo
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        case ${{ matrix.job.target }} in
+          arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
+          aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
+        esac
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.job.target }}
+
+    - name: Overwrite build command env variable
+      if: matrix.job.use-cross
+      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
+
+    - name: Install cross
+      if: matrix.job.use-cross
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cross
+
+    - name: Build
+      run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
+
+    - name: Create archive
+      id: package
+      run: |
+        EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
+        PKG_suffix=".tar.gz" ; case ${{ matrix.job.target }} in *-pc-windows-*) PKG_suffix=".zip" ;; esac;
+
+        # Setup paths
+        BIN_NAME="${{ needs.crate_metadata.outputs.name }}${EXE_suffix}"
+        BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
+
+        PKG_BASENAME=$REPO_NAME-$GITHUB_REF_NAME-${{ matrix.job.target }}
+        PKG_NAME=${PKG_BASENAME}${PKG_suffix}
+        echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
+
+        mkdir -p "${PKG_BASENAME}"
+        cp "$BIN_PATH" "README.md" "LICENSE*" "$PKG_BASENAME"
+
+        # base compressed package
+        case ${{ matrix.job.target }} in
+          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
+          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
+        esac;
+
+    - name: Artifact upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ steps.package.outputs.PKG_NAME }}
+        path: ${{ steps.package.outputs.PKG_NAME }}
