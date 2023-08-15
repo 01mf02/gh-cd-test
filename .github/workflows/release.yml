@@ -71,15 +71,15 @@ jobs:
       with:
         targets: ${{ matrix.job.target }}
 
-    - name: Overwrite build command env variable
-      if: matrix.job.use-cross
-      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
-
     - name: Install cross
       if: matrix.job.use-cross
       uses: taiki-e/install-action@v2
       with:
         tool: cross
+
+    - name: Use cross as build tool
+      if: matrix.job.use-cross
+      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
 
     - name: Build
       run: $BUILD_CMD build --release --target=${{ matrix.job.target }}
