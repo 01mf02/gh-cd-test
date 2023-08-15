@@ -87,12 +87,14 @@ jobs:
 
     - name: Determine paths
       id: paths
-      runs-on: ubuntu-20.04
       run: |
-        EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
+        EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac
         BIN_PATH="target/${{ matrix.job.target }}/release/${NAME}${EXE_suffix}"
         PKG_NAME=${NAME}-${VERSION}-${{ matrix.job.target }}${EXE_suffix}
-        upx ${BIN_PATH} -o ${PKG_NAME}
+        case ${{ matrix.job.os }} in
+          ubuntu-*) upx ${BIN_PATH} -o ${PKG_NAME} ;;
+          *) cp ${BIN_PATH} ${PKG_NAME} ;;
+        esac
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
 
     - name: Upload release archive
