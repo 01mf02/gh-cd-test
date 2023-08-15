@@ -91,11 +91,12 @@ jobs:
         EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac
         BIN_PATH="target/${{ matrix.job.target }}/release/${NAME}${EXE_suffix}"
         PKG_NAME=${NAME}-${VERSION}-${{ matrix.job.target }}${EXE_suffix}
-        case ${{ matrix.job.os }} in
-          ubuntu-*) upx ${BIN_PATH} -o ${PKG_NAME} ;;
-          *) cp ${BIN_PATH} ${PKG_NAME} ;;
-        esac
+        cp ${BIN_PATH} ${PKG_NAME}
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Compress binary
+      if: matrix.job.use-cross
+      run: upx ${{ steps.paths.outputs.PKG_NAME }}
 
     - name: Upload release archive
       env:
