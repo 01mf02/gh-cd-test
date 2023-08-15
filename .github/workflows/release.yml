@@ -1,19 +1,42 @@
+# Inspiration:
+#
+# https://github.com/sharkdp/hyperfine/blob/d449ebd7c18246b7c3f6ee19a97a4cf24e34e106/.github/workflows/CICD.yml
+# https://github.com/BurntSushi/ripgrep/blob/61733f6378b62fa2dc2e7f3eff2f2e7182069ca9/.github/workflows/release.yml
+# https://github.com/XAMPPRocky/tokei/blob/ae77e1945631fd9457f7d455f2f0f2f889356f58/.github/workflows/mean_bean_deploy.yml
+
 name: Release
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]*"
 
 defaults:
   run:
     shell: bash
 
 env:
-  REPO_NAME: ${{ github.event.repository.name }}
+  NAME: ${{ github.event.repository.name }}
   VERSION: ${{ github.ref_name }}
 
+# for gh release upload
+permissions:
+  contents: write
+
 jobs:
+  create-release:
+    name: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create ${{ VERSION }}
+
   build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -35,13 +58,13 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v3
 
-    - name: Install prerequisites
-      shell: bash
-      run: |
-        case ${{ matrix.job.target }} in
-          arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
-          aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
-        esac
+    - name: Install ARM/Linux prerequisites
+      if: startsWith(matrix.job.target, 'arm-unknown-linux-')
+      run: sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf
+
+    - name: Install AArch64/Linux prerequisites
+      if: matrix.job.target == 'aarch64-unknown-linux-gnu'
+      run: sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -61,40 +84,22 @@ jobs:
     - name: Build
       run: $BUILD_CMD build --release --target=${{ matrix.job.target }}
 
-    - name: Create archive
-      id: package
+    - name: Determine paths
+      id: paths
       run: |
         EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
-        PKG_suffix=".tar.gz" ; case ${{ matrix.job.target }} in *-pc-windows-*) PKG_suffix=".zip" ;; esac;
-
-        # Setup paths
-        BIN_NAME="${REPO_NAME}${EXE_suffix}"
-        BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
-
-        PKG_BASENAME=${REPO_NAME}-${VERSION}-${{ matrix.job.target }}
-        PKG_NAME=${PKG_BASENAME}${PKG_suffix}
+        BIN_PATH="target/${{ matrix.job.target }}/release/${NAME}${EXE_suffix}"
+        PKG_NAME=${NAME}-${VERSION}-${{ matrix.job.target }}${EXE_suffix}
+        echo "BIN_PATH=${BIN_PATH}" >> $GITHUB_OUTPUT
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
-
-        mkdir -p "${PKG_BASENAME}"
-        cp "$BIN_PATH" README.md LICENSE* "$PKG_BASENAME"
-
-        case ${{ matrix.job.target }} in
-          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
-          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
-        esac;
 
     - name: Artifact upload
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ steps.package.outputs.PKG_NAME }}
-        path: ${{ steps.package.outputs.PKG_NAME }}
+        name: ${{ steps.paths.outputs.PKG_NAME }}
+        path: ${{ steps.paths.outputs.BIN_PATH }}
 
     - name: Upload release archive
       env:
         GH_TOKEN: ${{ github.token }}
-      permissions:
-        contents: write
-      run: |
-        ls
-        echo gh release upload ${VERSION} ${{ steps.package.outputs.PKG_NAME }}
-        gh release upload ${VERSION} ${{ steps.package.outputs.PKG_NAME }}
+      run: gh release upload ${VERSION} ${{ steps.paths.outputs.PKG_NAME }}
