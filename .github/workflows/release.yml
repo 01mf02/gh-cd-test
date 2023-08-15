@@ -87,6 +87,7 @@ jobs:
 
     - name: Determine paths
       id: paths
+      runs-on: ubuntu-20.04
       run: |
         EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
         BIN_PATH="target/${{ matrix.job.target }}/release/${NAME}${EXE_suffix}"
