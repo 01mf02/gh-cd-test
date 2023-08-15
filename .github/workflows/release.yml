@@ -45,10 +45,10 @@ jobs:
 #         - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04, use-cross: true }
 #         - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04, use-cross: true }
 #         - { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04, use-cross: true }
-#         - { target: i686-pc-windows-msvc        , os: windows-2019                  }
+          - { target: i686-pc-windows-msvc        , os: windows-2019                  }
 #         - { target: i686-unknown-linux-gnu      , os: ubuntu-20.04, use-cross: true }
 #         - { target: i686-unknown-linux-musl     , os: ubuntu-20.04, use-cross: true }
-#         - { target: x86_64-apple-darwin         , os: macos-12                      }
+          - { target: x86_64-apple-darwin         , os: macos-12                      }
 #         - { target: x86_64-pc-windows-gnu       , os: windows-2019                  }
 #         - { target: x86_64-pc-windows-msvc      , os: windows-2019                  }
 #         - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, use-cross: true }
@@ -91,7 +91,7 @@ jobs:
         EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
         BIN_PATH="target/${{ matrix.job.target }}/release/${NAME}${EXE_suffix}"
         PKG_NAME=${NAME}-${VERSION}-${{ matrix.job.target }}${EXE_suffix}
-        cp ${BIN_PATH} ${PKG_NAME}
+        upx ${BIN_PATH} -o ${PKG_NAME}
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
 
     - name: Upload release archive
