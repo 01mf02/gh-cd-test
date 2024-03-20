@@ -37,6 +37,8 @@ jobs:
         shell: bash
         run: |
           echo Hello World
+          echo $0
+          which cargo wget
           VERSION=0.12.1
           DIR=wasm-pack-v$(VERSION)-x86_64-unknown-linux-musl
           wget https://github.com/rustwasm/wasm-pack/releases/download/v$(VERSION)/$(DIR).tar.gz
