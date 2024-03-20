@@ -41,11 +41,9 @@ jobs:
           wget https://github.com/rustwasm/wasm-pack/releases/download/v${VERSION}/${DIR}.tar.gz
           tar xzf ${DIR}.tar.gz
           mv ${DIR}/wasm-pack ~/.cargo/bin
-      - name: Compile
-        run: wasm-pack build --target web --release
-        working-directory: src
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      #- name: Compile
+      #  run: wasm-pack build --target web --release
+      #  working-directory: src
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
